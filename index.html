@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>City Council Priority Ranking — City of Naples</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1F3864;
+    --blue: #2E75B6;
+    --gold: #C9A84C;
+    --gold-light: #F5E6C0;
+    --cream: #FAFAF7;
+    --white: #FFFFFF;
+    --gray-100: #F4F4F2;
+    --gray-200: #E8E8E4;
+    --gray-400: #999990;
+    --gray-600: #666660;
+    --gray-800: #333330;
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.18);
+    --radius: 6px;
+    --transition: 0.2s ease;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: var(--cream);
+    color: var(--gray-800);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--navy);
+    padding: 32px 48px 28px;
+    border-bottom: 4px solid var(--gold);
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-inner { max-width: 960px; margin: 0 auto; }
+  .city-label {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    color: var(--white);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  header p.subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.65);
+    font-weight: 300;
+  }
+
+  /* INSTRUCTIONS */
+  .instructions {
+    background: var(--white);
+    border-left: 4px solid var(--gold);
+    margin: 32px auto;
+    max-width: 960px;
+    padding: 20px 24px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+  .instructions h2 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+  .instructions p {
+    font-size: 14px;
+    color: var(--gray-600);
+    line-height: 1.6;
+  }
+
+  /* MAIN LAYOUT */
+  .main {
+    max-width: 960px;
+    margin: 0 auto 60px;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .column-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  /* ITEM CARDS */
+  .item-card {
+    background: var(--white);
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    cursor: grab;
+    user-select: none;
+    transition: box-shadow var(--transition), border-color var(--transition), transform var(--transition);
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .item-card:active { cursor: grabbing; }
+  .item-card.dragging {
+    opacity: 0.35;
+    transform: scale(0.98);
+  }
+  .item-card.drag-over {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.25);
+  }
+  .item-card:hover {
+    border-color: var(--blue);
+    box-shadow: var(--shadow-md);
+  }
+
+  .item-drag-handle {
+    color: var(--gray-400);
+    font-size: 16px;
+    line-height: 1;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .item-body { flex: 1; }
+  .item-number {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 3px;
+  }
+  .item-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--gray-800);
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+  .item-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .item-dept {
+    font-size: 11px;
+    color: var(--gray-400);
+    font-style: italic;
+  }
+  .item-category {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--gray-100);
+    color: var(--gray-600);
+  }
+  .item-category.land-use { background: #E8F0F8; color: #2E75B6; }
+  .item-category.finance { background: #FEF3E2; color: #B7791F; }
+  .item-category.safety { background: #FEE2E2; color: #B91C1C; }
+  .item-category.collab { background: #E6F4EA; color: #2D6A4F; }
+  .item-category.sustainability { background: #E2F8F0; color: #1A6B4A; }
+  .item-category.quality { background: #F3E8FF; color: #7C3AED; }
+
+  /* RANKED COLUMN */
+  #ranked-column {
+    background: var(--gray-100);
+    border: 2px dashed var(--gray-200);
+    border-radius: var(--radius);
+    min-height: 500px;
+    padding: 16px;
+    transition: background var(--transition), border-color var(--transition);
+  }
+  #ranked-column.drag-over-zone {
+    background: var(--gold-light);
+    border-color: var(--gold);
+  }
+  #ranked-column .item-card {
+    margin-bottom: 10px;
+  }
+  #ranked-column .item-card:last-child { margin-bottom: 0; }
+  .rank-badge {
+    background: var(--navy);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 700;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .ranked-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--gray-400);
+    font-size: 14px;
+  }
+  .ranked-empty-state .arrow { font-size: 28px; margin-bottom: 12px; opacity: 0.4; }
+
+  /* UNRANKED COLUMN */
+  #unranked-column {
+    min-height: 500px;
+  }
+  #unranked-column .item-card {
+    margin-bottom: 10px;
+  }
+
+  /* FOOTER ACTIONS */
+  .actions-bar {
+    max-width: 960px;
+    margin: 0 auto 24px;
+    padding: 0 24px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .btn-primary {
+    background: var(--navy);
+    color: var(--white);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-primary:hover { background: #162B50; box-shadow: var(--shadow-md); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--gray-600);
+    border: 1.5px solid var(--gray-200);
+  }
+  .btn-secondary:hover { border-color: var(--gray-400); color: var(--gray-800); }
+  .btn-gold {
+    background: var(--gold);
+    color: var(--navy);
+  }
+  .btn-gold:hover { background: #B8963E; }
+
+  /* RESULTS MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,20,40,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 36px 40px;
+    max-width: 640px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+  }
+  .modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--gold);
+  }
+  .modal-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--navy);
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: var(--gray-400);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .modal-close:hover { color: var(--gray-800); }
+  .results-list { list-style: none; }
+  .results-list li {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 14px;
+  }
+  .results-list li:last-child { border-bottom: none; }
+  .result-rank {
+    font-weight: 700;
+    color: var(--navy);
+    min-width: 28px;
+    padding-top: 1px;
+  }
+  .results-footer-note {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--gray-400);
+    font-style: italic;
+    text-align: center;
+  }
+  .copy-btn {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  /* PROGRESS INDICATOR */
+  .progress-bar-wrap {
+    max-width: 960px;
+    margin: 0 auto 16px;
+    padding: 0 24px;
+  }
+  .progress-label {
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .progress-bar {
+    height: 4px;
+    background: var(--gray-200);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--gold));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* EMAIL MODAL */
+  .email-modal-body { padding: 8px 0 4px; }
+  .email-field-group { margin-bottom: 18px; }
+  .email-field-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .email-field-group input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 14px;
+    color: var(--gray-800);
+    background: var(--cream);
+    transition: border-color var(--transition);
+    outline: none;
+  }
+  .email-field-group input:focus { border-color: var(--blue); background: var(--white); }
+  .email-field-group input.input-error { border-color: #B91C1C; }
+  .email-preview {
+    background: var(--gray-100);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 12.5px;
+    color: var(--gray-600);
+    line-height: 1.7;
+    max-height: 180px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    margin-bottom: 18px;
+    border: 1px solid var(--gray-200);
+  }
+  .email-preview-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 8px;
+  }
+  .email-error-msg {
+    font-size: 12px;
+    color: #B91C1C;
+    margin-top: 5px;
+    display: none;
+  }
+  .modal-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .modal-btn-row .btn { flex: 1; }
+  .btn-email {
+    background: var(--blue);
+    color: var(--white);
+  }
+  .btn-email:hover { background: #255E92; }
+
+  @media print {
+    header { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .actions-bar, .instructions { display: none; }
+    .main { display: block; }
+    #unranked-column { display: none; }
+    #ranked-column { border: none; background: none; padding: 0; }
+    .item-card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="city-label">City of Naples, Florida</div>
+    <h1>Council Priority Ranking Survey</h1>
+    <p class="subtitle">Additional Items for Prioritization &nbsp;·&nbsp; March 2026</p>
+  </div>
+</header>
+
+<div class="instructions">
+  <h2>How to Use This Tool</h2>
+  <p>Drag items from the <strong>left column</strong> into the <strong>right column</strong> to rank them in order of priority — <strong>#1 being highest priority</strong>. You can reorder items in the ranked list by dragging them up or down. Ranked items show your priority position. When finished, click <strong>"View My Rankings"</strong> to review and copy your results.</p>
+</div>
+
+<div class="progress-bar-wrap">
+  <div class="progress-label">
+    <span id="progress-text">0 of 17 items ranked</span>
+    <span id="progress-pct">0%</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+</div>
+
+<div class="main">
+  <div>
+    <div class="column-label">Unranked Items — Drag to rank →</div>
+    <div id="unranked-column"></div>
+  </div>
+  <div>
+    <div class="column-label">Your Rankings — Highest Priority at Top</div>
+    <div id="ranked-column">
+      <div class="ranked-empty-state" id="empty-state">
+        <div class="arrow">←</div>
+        <div>Drag items here to rank them</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="actions-bar">
+  <button class="btn btn-primary" onclick="showResults()">View My Rankings</button>
+  <button class="btn btn-email" onclick="openEmailModal()">✉ Send via Email</button>
+  <button class="btn btn-gold" onclick="window.print()">Print / Save as PDF</button>
+  <button class="btn btn-secondary" onclick="resetAll()">Reset All</button>
+</div>
+
+<!-- Results Modal -->
+<div class="modal-overlay" id="results-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Your Priority Rankings</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <ul class="results-list" id="results-list"></ul>
+    <div class="results-footer-note" id="unranked-note"></div>
+    <button class="btn btn-primary copy-btn" onclick="copyResults()">Copy Rankings to Clipboard</button>
+  </div>
+</div>
+
+<!-- Email Modal -->
+<div class="modal-overlay" id="email-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Send Rankings via Email</h2>
+      <button class="modal-close" onclick="closeEmailModal()">✕</button>
+    </div>
+    <div class="email-modal-body">
+      <div class="email-field-group">
+        <label for="sender-name">Your Name</label>
+        <input type="text" id="sender-name" placeholder="Council Member Name" />
+        <div class="email-error-msg" id="name-error">Please enter your name before sending.</div>
+      </div>
+      <div class="email-preview-label">Email Preview</div>
+      <div class="email-preview" id="email-preview-text"></div>
+      <div class="modal-btn-row">
+        <button class="btn btn-email" onclick="sendEmail()">Open in Email Client</button>
+        <button class="btn btn-secondary" onclick="closeEmailModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const RECIPIENT_EMAIL = "clerk@naplesgov.com"; // ← change to desired recipient
+// ────────────────────────────────────────────────────────────────────────────
+
+const ITEMS = [
+  { id: 1,  title: "DRB Process Review", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use" },
+  { id: 2,  title: "Review Incentives within the Downtown 5th Ave Overlay", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use" },
+  { id: 3,  title: 'Eliminate 5th Avenue "Build to Setback" Requirement', dept: "Planning", category: "Land Use & Planning", cat_class: "land-use" },
+  { id: 4,  title: "Affordable / Workforce Housing", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use" },
+  { id: 5,  title: "Nonconforming Structures and Elevated Homes Review", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use" },
+  { id: 6,  title: "Miracle Mile Master Plan", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use" },
+  { id: 7,  title: "Review Signage Regulations City-Wide", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use" },
+  { id: 8,  title: "Review Lighting Regulations City-Wide", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use" },
+  { id: 9,  title: "Review Parking Requirements in All Zoning Districts", dept: "Planning & City Manager", category: "Land Use & Planning", cat_class: "land-use" },
+  { id: 10, title: "Continued Discussion on Paid Parking Downtown", dept: "City Manager & Finance", category: "Finance", cat_class: "finance" },
+  { id: 11, title: "Review Regulations Pertaining to Underground Parking", dept: "City Attorney & City Manager", category: "Land Use & Planning", cat_class: "land-use" },
+  { id: 12, title: "Review Outdoor Dining Regulations for Potential Changes", dept: "City Attorney & City Manager", category: "Land Use & Planning", cat_class: "land-use" },
+  { id: 13, title: "Joint Meeting with the NAA", dept: "City Manager", category: "Collaborative Relationships", cat_class: "collab" },
+  { id: 14, title: "Improve Security in Council Chambers & City Hall", dept: "City Manager", category: "Safety & Infrastructure", cat_class: "safety" },
+  { id: 15, title: "Collier County One-Cent Infrastructure Surtax Initiative Update", dept: "City Manager", category: "Finance", cat_class: "finance" },
+  { id: 16, title: "Interlocal Agreements — Water Usage/Capacity & Sewer (City & County)", dept: "Public Works", category: "Sustainability", cat_class: "sustainability" },
+  { id: 17, title: "Special Event Permit Process & Usage of Public Space", dept: "Community Services", category: "Quality of Life", cat_class: "quality" },
+];
+
+let draggedEl = null;
+let dragSource = null; // 'unranked' or 'ranked'
+
+function makeCard(item, inRanked, rank) {
+  const card = document.createElement('div');
+  card.className = 'item-card';
+  card.draggable = true;
+  card.dataset.id = item.id;
+
+  const handle = document.createElement('div');
+  handle.className = 'item-drag-handle';
+  handle.innerHTML = '⋮⋮';
+
+  const body = document.createElement('div');
+  body.className = 'item-body';
+
+  if (inRanked) {
+    const badge = document.createElement('div');
+    badge.className = 'rank-badge';
+    badge.textContent = rank;
+    card.appendChild(badge);
+  } else {
+    card.appendChild(handle);
+  }
+
+  body.innerHTML = `
+    <div class="item-number">Item ${item.id}</div>
+    <div class="item-title">${item.title}</div>
+    <div class="item-meta">
+      <span class="item-dept">${item.dept}</span>
+      <span class="item-category ${item.cat_class}">${item.category}</span>
+    </div>
+  `;
+  card.appendChild(body);
+
+  // Drag events
+  card.addEventListener('dragstart', e => {
+    draggedEl = card;
+    dragSource = inRanked ? 'ranked' : 'unranked';
+    setTimeout(() => card.classList.add('dragging'), 0);
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  card.addEventListener('dragend', () => {
+    card.classList.remove('dragging');
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    document.getElementById('ranked-column').classList.remove('drag-over-zone');
+    draggedEl = null;
+    updateRankBadges();
+    updateProgress();
+    toggleEmptyState();
+  });
+  card.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (draggedEl && draggedEl !== card) {
+      card.classList.add('drag-over');
+    }
+  });
+  card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+  card.addEventListener('drop', e => {
+    e.preventDefault();
+    card.classList.remove('drag-over');
+    if (!draggedEl || draggedEl === card) return;
+
+    const targetParent = card.parentNode;
+    const rect = card.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+    if (e.clientY < midpoint) {
+      targetParent.insertBefore(draggedEl, card);
+    } else {
+      targetParent.insertBefore(draggedEl, card.nextSibling);
+    }
+
+    // Rebuild card to match new column type
+    const itemId = parseInt(draggedEl.dataset.id);
+    const item = ITEMS.find(i => i.id === itemId);
+    const nowInRanked = targetParent.id === 'ranked-column';
+    const newCard = makeCard(item, nowInRanked, 0);
+    draggedEl.replaceWith(newCard);
+    draggedEl = newCard;
+  });
+
+  return card;
+}
+
+function buildUnranked() {
+  const col = document.getElementById('unranked-column');
+  col.innerHTML = '';
+  ITEMS.forEach(item => col.appendChild(makeCard(item, false, 0)));
+}
+
+function toggleEmptyState() {
+  const ranked = document.getElementById('ranked-column');
+  const empty = document.getElementById('empty-state');
+  const hasCards = ranked.querySelectorAll('.item-card').length > 0;
+  if (empty) empty.style.display = hasCards ? 'none' : 'block';
+}
+
+function updateRankBadges() {
+  const ranked = document.getElementById('ranked-column');
+  ranked.querySelectorAll('.item-card').forEach((card, i) => {
+    const badge = card.querySelector('.rank-badge');
+    if (badge) badge.textContent = i + 1;
+  });
+}
+
+function updateProgress() {
+  const ranked = document.getElementById('ranked-column');
+  const count = ranked.querySelectorAll('.item-card').length;
+  const total = ITEMS.length;
+  const pct = Math.round((count / total) * 100);
+  document.getElementById('progress-text').textContent = `${count} of ${total} items ranked`;
+  document.getElementById('progress-pct').textContent = `${pct}%`;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+// Drop on ranked column (empty zone)
+const rankedCol = document.getElementById('ranked-column');
+rankedCol.addEventListener('dragover', e => {
+  e.preventDefault();
+  rankedCol.classList.add('drag-over-zone');
+});
+rankedCol.addEventListener('dragleave', e => {
+  if (!rankedCol.contains(e.relatedTarget)) {
+    rankedCol.classList.remove('drag-over-zone');
+  }
+});
+rankedCol.addEventListener('drop', e => {
+  e.preventDefault();
+  rankedCol.classList.remove('drag-over-zone');
+  if (!draggedEl) return;
+
+  // Only drop if dropped on the column itself (not a card)
+  if (e.target === rankedCol || e.target.id === 'empty-state' || e.target.closest('#empty-state')) {
+    const itemId = parseInt(draggedEl.dataset.id);
+    const item = ITEMS.find(i => i.id === itemId);
+    const newCard = makeCard(item, true, 0);
+    rankedCol.appendChild(newCard);
+    draggedEl.remove();
+    draggedEl = newCard;
+  }
+});
+
+// Drop on unranked column
+const unrankedCol = document.getElementById('unranked-column');
+unrankedCol.addEventListener('dragover', e => e.preventDefault());
+unrankedCol.addEventListener('drop', e => {
+  e.preventDefault();
+  if (!draggedEl) return;
+  const itemId = parseInt(draggedEl.dataset.id);
+  const item = ITEMS.find(i => i.id === itemId);
+
+  // Only move back if came from ranked
+  if (dragSource === 'ranked') {
+    const newCard = makeCard(item, false, 0);
+    unrankedCol.appendChild(newCard);
+    draggedEl.remove();
+    draggedEl = newCard;
+  }
+});
+
+function showResults() {
+  const ranked = document.getElementById('ranked-column');
+  const cards = ranked.querySelectorAll('.item-card');
+  const list = document.getElementById('results-list');
+  list.innerHTML = '';
+
+  if (cards.length === 0) {
+    list.innerHTML = '<li style="color:#999;font-style:italic;">No items have been ranked yet. Drag items from the left column to rank them.</li>';
+  } else {
+    cards.forEach((card, i) => {
+      const itemId = parseInt(card.dataset.id);
+      const item = ITEMS.find(it => it.id === itemId);
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="result-rank">#${i+1}</span><span>${item.title}</span>`;
+      list.appendChild(li);
+    });
+  }
+
+  const unrankedCount = ITEMS.length - cards.length;
+  const note = document.getElementById('unranked-note');
+  note.textContent = unrankedCount > 0 ? `${unrankedCount} item(s) not yet ranked.` : 'All 17 items have been ranked.';
+
+  document.getElementById('results-modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('results-modal').classList.remove('active');
+}
+
+function copyResults() {
+  const ranked = document.getElementById('ranked-column');
+  const cards = ranked.querySelectorAll('.item-card');
+  let text = "City of Naples — Council Priority Rankings\n";
+  text += "=========================================\n\n";
+  cards.forEach((card, i) => {
+    const itemId = parseInt(card.dataset.id);
+    const item = ITEMS.find(it => it.id === itemId);
+    text += `${i+1}. ${item.title}\n   (${item.dept} — ${item.category})\n\n`;
+  });
+  const unrankedCount = ITEMS.length - cards.length;
+  if (unrankedCount > 0) text += `\n[${unrankedCount} item(s) not ranked]`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+
+function buildRankingText(senderName) {
+  const ranked = document.getElementById('ranked-column');
+  const cards = ranked.querySelectorAll('.item-card');
+  const name = senderName ? senderName.trim() : '';
+  let text = "City of Naples — Council Priority Rankings\n";
+  text += "==========================================\n";
+  if (name) text += `Submitted by: ${name}\n`;
+  text += `Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n\n`;
+
+  if (cards.length === 0) {
+    text += "(No items have been ranked yet.)\n";
+  } else {
+    text += "RANKED PRIORITIES (Highest to Lowest):\n\n";
+    cards.forEach((card, i) => {
+      const itemId = parseInt(card.dataset.id);
+      const item = ITEMS.find(it => it.id === itemId);
+      text += `  ${i + 1}. ${item.title}\n     (${item.dept} — ${item.category})\n\n`;
+    });
+  }
+
+  const unrankedCount = ITEMS.length - cards.length;
+  if (unrankedCount > 0) {
+    text += `[${unrankedCount} item(s) not ranked]\n`;
+  } else {
+    text += "All 17 items have been ranked.\n";
+  }
+  return text;
+}
+
+function openEmailModal() {
+  const preview = document.getElementById('email-preview-text');
+  const nameInput = document.getElementById('sender-name');
+  preview.textContent = buildRankingText(nameInput.value);
+  nameInput.addEventListener('input', () => {
+    preview.textContent = buildRankingText(nameInput.value);
+    document.getElementById('name-error').style.display = 'none';
+    nameInput.classList.remove('input-error');
+  });
+  document.getElementById('email-modal').classList.add('active');
+}
+
+function closeEmailModal() {
+  document.getElementById('email-modal').classList.remove('active');
+}
+
+function sendEmail() {
+  const nameInput = document.getElementById('sender-name');
+  const name = nameInput.value.trim();
+  if (!name) {
+    nameInput.classList.add('input-error');
+    document.getElementById('name-error').style.display = 'block';
+    nameInput.focus();
+    return;
+  }
+  const subject = encodeURIComponent(`Council Priority Rankings — ${name}`);
+  const body = encodeURIComponent(buildRankingText(name));
+  window.location.href = `mailto:${RECIPIENT_EMAIL}?subject=${subject}&body=${body}`;
+}
+
+function resetAll() {
+  if (!confirm('Reset all rankings and start over?')) return;
+  document.getElementById('ranked-column').innerHTML = `
+    <div class="ranked-empty-state" id="empty-state">
+      <div class="arrow">←</div>
+      <div>Drag items here to rank them</div>
+    </div>`;
+  buildUnranked();
+  updateProgress();
+}
+
+// Init
+buildUnranked();
+updateProgress();
+toggleEmptyState();
+</script>
+</body>
+</html>
