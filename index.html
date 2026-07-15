@@ -203,35 +203,16 @@
   .item-category.sustainability { background: #E2F8F0; color: #1A6B4A; }
   .item-category.quality { background: #F3E8FF; color: #7C3AED; }
 
-  /* STATUS FIELD (all items) — collapsible via toggle arrow, text set in code (ITEMS array) */
-  .item-status-toggle {
+  /* STATUS FIELD (all items) — always visible, text set in code (ITEMS array) */
+  .item-status-label {
     margin-top: 10px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    cursor: pointer;
-    user-select: none;
-  }
-  .status-arrow {
-    font-size: 16px;
-    line-height: 1;
-    color: var(--gray-400);
-    display: inline-block;
-    transition: transform 0.15s ease;
-  }
-  .item-status-toggle.open .status-arrow { transform: rotate(90deg); }
-  .status-toggle-label {
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--gray-400);
-    flex: 1;
-    min-width: 0;
   }
-  .item-status-toggle:hover .status-toggle-label { color: var(--blue); }
-  .item-status-panel { margin-top: -2px; margin-bottom: 8px; }
+  .item-status-panel { margin-top: 4px; margin-bottom: 10px; }
   .item-status-text {
     font-size: 12.5px;
     color: var(--gray-800);
@@ -241,6 +222,7 @@
     border-radius: 3px;
     padding: 7px 10px;
     text-wrap: pretty;
+    overflow-wrap: break-word;
   }
   .item-status-text em { color: var(--gray-400); font-style: italic; }
 
@@ -256,17 +238,42 @@
   .item-other-row { margin-top: 6px; margin-bottom: 2px; }
   .item-other-input {
     width: 100%;
+    display: block;
     font-family: 'Source Sans 3', sans-serif;
     font-size: 13px;
+    line-height: 1.5;
     color: var(--gray-800);
     border: 1px solid var(--gray-200);
     border-radius: 4px;
-    padding: 7px 10px;
+    padding: 8px 10px;
     background: var(--cream);
     outline: none;
+    resize: vertical;
+    min-height: 90px;
+    overflow: hidden;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
     transition: border-color var(--transition);
   }
   .item-other-input:focus { border-color: var(--blue); background: var(--white); }
+  .item-other-count {
+    font-size: 10px;
+    color: var(--gray-400);
+    text-align: right;
+    margin-top: 2px;
+  }
+  .item-other-count.near-limit { color: var(--gold); }
+  .item-other-count.at-limit { color: #B91C1C; }
+  .item-other-print {
+    display: none;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--gray-800);
+    white-space: pre-wrap;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+  }
+  .item-other-print em { color: var(--gray-400); font-style: italic; }
 
   /* RESULTS MODAL — status line */
   .result-status {
@@ -538,20 +545,12 @@
     #unranked-label { display: none; }
     #ranked-column { border: none; background: none; padding: 0; }
     .item-card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
-    .item-other-input { border: none !important; background: none !important; padding: 0 !important; }
+    .item-other-input { display: none !important; }
+    .item-other-count { display: none !important; }
+    .item-other-print { display: block !important; }
     .item-status-panel { display: block !important; }
     .item-status-text { background: none !important; border-left: none !important; padding: 0 !important; }
-    .status-arrow { display: none !important; }
     .rank-badge { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-    .status-toggle-label { font-size: 0; }
-    .status-toggle-label::before {
-      content: "Status:";
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--gray-400);
-    }
   }
 </style>
 </head>
@@ -668,7 +667,8 @@ const ITEMS = [
 
 let draggedEl = null;
 let dragSource = null; // 'unranked' or 'ranked'
-let itemState = {}; // { [itemId]: { statusOpen: false, otherText: '' } } — persists toggle state & typed "Other" text across drag re-renders
+let itemState = {}; // { [itemId]: { otherText: '' } } — persists typed "Other" text across drag re-renders
+const OTHER_MAX_LENGTH = 600; // roughly 3 short paragraphs
 
 function escapeHtml(str) {
   return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -700,30 +700,29 @@ function makeCard(item, inRanked, rank) {
   }
 
   const state = itemState[item.id] || {};
-  const statusOpen = !!state.statusOpen;
   const statusText = (item.status || '').trim();
-  const statusToggleHtml = `
-      <div class="item-status-toggle${statusOpen ? ' open' : ''}">
-        <span class="status-arrow">▸</span>
-        <span class="status-toggle-label">Click to view the item's status</span>
-      </div>
-      <div class="item-status-panel" style="display:${statusOpen ? 'block' : 'none'};">
+  const statusHtml = `
+      <div class="item-status-label">Status:</div>
+      <div class="item-status-panel">
         <div class="item-status-text">${statusText ? escapeHtml(statusText) : '<em>No status set</em>'}</div>
       </div>`;
 
   if (item.isOther) {
+    const otherText = state.otherText || '';
     body.innerHTML = `
       <div class="item-number">Item ${item.id}</div>
-      <div class="item-title">Other <span class="item-other-note">(please specify below)</span></div>
+      <div class="item-title">Other <span class="item-other-note">(please specify below, max ${OTHER_MAX_LENGTH} characters)</span></div>
       <div class="item-other-row">
-        <input type="text" draggable="false" class="item-other-input" placeholder="Describe another priority not listed above..." value="${escapeAttr(state.otherText)}">
+        <textarea draggable="false" class="item-other-input" rows="4" maxlength="${OTHER_MAX_LENGTH}" placeholder="Describe another priority not listed above...">${escapeHtml(otherText)}</textarea>
+        <div class="item-other-count">${otherText.length} / ${OTHER_MAX_LENGTH}</div>
+        <div class="item-other-print">${otherText ? escapeHtml(otherText) : '<em>Not specified</em>'}</div>
       </div>
     `;
   } else {
     body.innerHTML = `
       <div class="item-number">Item ${item.id}</div>
       <div class="item-title">${item.title}</div>
-      ${statusToggleHtml}
+      ${statusHtml}
       <div class="item-meta">
         <span class="item-dept">${item.dept}</span>
         <span class="item-category ${item.cat_class}">${item.category}</span>
@@ -732,29 +731,40 @@ function makeCard(item, inRanked, rank) {
   }
   card.appendChild(body);
 
-  // Wire up the status toggle arrow (status text itself is static, set in the ITEMS array in code)
-  const statusToggle = body.querySelector('.item-status-toggle');
-  const statusPanel = body.querySelector('.item-status-panel');
-  if (statusToggle && statusPanel) {
-    statusToggle.addEventListener('click', e => {
-      e.stopPropagation();
-      itemState[item.id] = itemState[item.id] || {};
-      const nowOpen = !itemState[item.id].statusOpen;
-      itemState[item.id].statusOpen = nowOpen;
-      statusPanel.style.display = nowOpen ? 'block' : 'none';
-      statusToggle.classList.toggle('open', nowOpen);
-    });
-    statusToggle.addEventListener('mousedown', e => e.stopPropagation());
-  }
-
-  // Wire up the "Other" text box: persist value in itemState and keep drag from hijacking clicks/typing
+  // Wire up the "Other" text box: persist value in itemState, auto-grow to fit content, keep drag from hijacking clicks/typing
   const otherInput = body.querySelector('.item-other-input');
+  const otherCount = body.querySelector('.item-other-count');
+  const otherPrint = body.querySelector('.item-other-print');
   if (otherInput) {
+    const autoGrow = () => {
+      otherInput.style.height = 'auto';
+      otherInput.style.height = otherInput.scrollHeight + 'px';
+    };
+    const updateCount = () => {
+      if (!otherCount) return;
+      const len = otherInput.value.length;
+      otherCount.textContent = `${len} / ${OTHER_MAX_LENGTH}`;
+      otherCount.classList.toggle('near-limit', len >= OTHER_MAX_LENGTH * 0.85 && len < OTHER_MAX_LENGTH);
+      otherCount.classList.toggle('at-limit', len >= OTHER_MAX_LENGTH);
+    };
+    const updatePrint = () => {
+      if (!otherPrint) return;
+      const val = otherInput.value.trim();
+      otherPrint.textContent = val || 'Not specified';
+      otherPrint.style.fontStyle = val ? 'normal' : 'italic';
+      otherPrint.style.color = val ? '' : 'var(--gray-400)';
+    };
     otherInput.addEventListener('input', e => {
       itemState[item.id] = itemState[item.id] || {};
       itemState[item.id].otherText = e.target.value;
+      autoGrow();
+      updateCount();
+      updatePrint();
     });
     otherInput.addEventListener('mousedown', e => e.stopPropagation());
+    // Initialize height/count to fit any existing content on render
+    requestAnimationFrame(autoGrow);
+    updateCount();
   }
 
   // Drag events
