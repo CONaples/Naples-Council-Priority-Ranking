@@ -534,12 +534,23 @@
     .actions-bar, .instructions { display: none; }
     .main { display: block; }
     #unranked-column { display: none; }
+    #unranked-label { display: none; }
     #ranked-column { border: none; background: none; padding: 0; }
     .item-card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
     .item-other-input { border: none !important; background: none !important; padding: 0 !important; }
     .item-status-panel { display: block !important; }
     .item-status-text { background: none !important; border-left: none !important; padding: 0 !important; }
     .status-arrow { display: none !important; }
+    .rank-badge { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .status-toggle-label { font-size: 0; }
+    .status-toggle-label::before {
+      content: "Status:";
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--gray-400);
+    }
   }
 </style>
 </head>
@@ -560,7 +571,7 @@
 
 <div class="instructions">
   <h2>How to Use This Tool</h2>
-  <p>Drag items from the <strong>left column</strong> into the <strong>right column</strong> to rank them in order of priority — <strong>#1 being highest priority</strong>. You can reorder items in the ranked list by dragging them up or down. Ranked items show your priority position. When finished, click <strong>"View My Rankings"</strong> to review and copy your results, or <strong>"Send Via Email"</strong> to email your results directly to Monique Barnhart-Tiberio. To print and save your results for your records, select <strong>"Print/Save As A PDF".</strong></p></div>
+  <p>Drag items from the <strong>left column</strong> into the <strong>right column</strong> to rank them in order of priority — <strong>#1 being highest priority</strong>. You can reorder items in the ranked list by dragging them up or down. Ranked items show your priority position. When finished, click <strong>"View My Rankings"</strong> to review and copy your results, or <strong>"Send Via Email"</strong> to email your results directly to Monique Barnhart-Tibero. To print and save your results for your records, select <strong>"Print/Save As A PDF".</strong></p></div>
 
 <div class="progress-bar-wrap">
   <div class="progress-label">
@@ -572,7 +583,7 @@
 
 <div class="main">
   <div>
-    <div class="column-label">Unranked Items — Drag to rank →</div>
+    <div class="column-label" id="unranked-label">Unranked Items — Drag to rank →</div>
     <div id="unranked-column"></div>
   </div>
   <div>
