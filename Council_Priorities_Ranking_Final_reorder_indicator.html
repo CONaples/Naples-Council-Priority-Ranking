@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>City Council Priority Ranking — City of Naples</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1F3864;
+    --blue: #2E75B6;
+    --gold: #C9A84C;
+    --gold-light: #F5E6C0;
+    --cream: #FAFAF7;
+    --white: #FFFFFF;
+    --gray-100: #F4F4F2;
+    --gray-200: #E8E8E4;
+    --gray-400: #999990;
+    --gray-600: #666660;
+    --gray-800: #333330;
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.18);
+    --radius: 6px;
+    --transition: 0.2s ease;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: var(--cream);
+    color: var(--gray-800);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--navy);
+    padding: 32px 48px 28px;
+    border-bottom: 4px solid var(--gold);
+    position: relative;
+    overflow: hidden;
+    
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-inner { max-width: 960px; margin: 0 auto; }
+  .city-label {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    color: var(--white);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  header p.subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.65);
+    font-weight: 300;
+  }
+  header img {
+    width: 125px;
+  }
+
+  /* INSTRUCTIONS */
+  .instructions {
+    background: var(--white);
+    border-left: 4px solid var(--gold);
+    margin: 32px auto;
+    max-width: 960px;
+    padding: 20px 24px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+  .instructions h2 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+  .instructions p {
+    font-size: 14px;
+    color: var(--gray-600);
+    line-height: 1.6;
+  }
+
+  /* MAIN LAYOUT */
+  .main {
+    max-width: 960px;
+    margin: 0 auto 60px;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .column-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  /* ITEM CARDS */
+  .item-card {
+    background: var(--white);
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    cursor: grab;
+    user-select: none;
+    transition: box-shadow var(--transition), border-color var(--transition), transform var(--transition);
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .item-card:active { cursor: grabbing; }
+  .item-card.dragging {
+    opacity: 0.35;
+    transform: scale(0.98);
+  }
+  .item-card.drag-over {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.25);
+  }
+  .item-card:hover {
+    border-color: var(--blue);
+    box-shadow: var(--shadow-md);
+  }
+
+  .item-drag-handle {
+    color: var(--gray-400);
+    font-size: 16px;
+    line-height: 1;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .item-body { flex: 1; }
+  .item-number {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 3px;
+  }
+  .item-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--gray-800);
+    line-height: 1.4;
+    margin-bottom: 4px;
+    text-wrap: pretty;
+  }
+  .item-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .item-dept {
+    font-size: 11px;
+    color: var(--gray-400);
+    font-style: italic;
+  }
+  .item-category {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--gray-100);
+    color: var(--gray-600);
+  }
+  .item-category.land-use { background: #E8F0F8; color: #2E75B6; }
+  .item-category.finance { background: #FEF3E2; color: #B7791F; }
+  .item-category.safety { background: #FEE2E2; color: #B91C1C; }
+  .item-category.collab { background: #E6F4EA; color: #2D6A4F; }
+  .item-category.sustainability { background: #E2F8F0; color: #1A6B4A; }
+  .item-category.quality { background: #F3E8FF; color: #7C3AED; }
+
+  /* STATUS FIELD (all items) — always visible, text set in code (ITEMS array) */
+  .item-status-label {
+    margin-top: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--gray-400);
+  }
+  .item-status-panel { margin-top: 4px; margin-bottom: 10px; }
+  .item-status-text {
+    font-size: 12.5px;
+    color: var(--gray-800);
+    line-height: 1.5;
+    background: var(--gray-100);
+    border-left: 3px solid var(--gold);
+    border-radius: 3px;
+    padding: 7px 10px;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+  }
+  .item-status-text em { color: var(--gray-400); font-style: italic; }
+
+  /* "OTHER" ITEM TEXT BOX */
+  .item-other-note {
+    font-size: 11px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--gray-400);
+    font-style: italic;
+  }
+  .item-other-row { margin-top: 6px; margin-bottom: 2px; }
+  .item-other-input {
+    width: 100%;
+    display: block;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--gray-800);
+    border: 1px solid var(--gray-200);
+    border-radius: 4px;
+    padding: 8px 10px;
+    background: var(--cream);
+    outline: none;
+    resize: vertical;
+    min-height: 90px;
+    overflow: hidden;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+    transition: border-color var(--transition);
+  }
+  .item-other-input:focus { border-color: var(--blue); background: var(--white); }
+  .item-other-count {
+    font-size: 10px;
+    color: var(--gray-400);
+    text-align: right;
+    margin-top: 2px;
+  }
+  .item-other-count.near-limit { color: var(--gold); }
+  .item-other-count.at-limit { color: #B91C1C; }
+  .item-other-print {
+    display: none;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--gray-800);
+    white-space: pre-wrap;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+  }
+  .item-other-print em { color: var(--gray-400); font-style: italic; }
+
+  /* RESULTS MODAL — status line */
+  .result-status {
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-top: 2px;
+    font-style: italic;
+  }
+
+  /* RANKED COLUMN */
+  #ranked-column {
+    background: var(--gray-100);
+    border: 2px dashed var(--gray-200);
+    border-radius: var(--radius);
+    min-height: 2200px;
+    padding: 16px;
+    transition: background var(--transition), border-color var(--transition);
+  }
+  #ranked-column.drag-over-zone {
+    background: var(--gold-light);
+    border-color: var(--gold);
+  }
+  #ranked-column .item-card {
+    margin-bottom: 10px;
+  }
+  #ranked-column .item-card.drop-before, #ranked-column .item-card.drop-after { position: relative; }
+  #ranked-column .item-card.drop-before::before, #ranked-column .item-card.drop-after::after { content: ''; position: absolute; left: -10px; right: -10px; height: 5px; background: var(--gold); border-radius: 4px; box-shadow: 0 0 0 2px rgba(201,168,76,0.2); z-index: 10; pointer-events: none; }
+  #ranked-column .item-card.drop-before::before { top: -8px; }
+  #ranked-column .item-card.drop-after::after { bottom: -8px; }
+  #ranked-column .item-card.drag-target { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.22); }
+
+
+  /* Ranked cards show only rank + item name on screen.
+     Full original details remain available when printing/PDF. */
+  #ranked-column .item-status-label,
+  #ranked-column .item-status-panel,
+  #ranked-column .item-meta {
+    display: none;
+  }
+
+  /* Keep the user's entered text visible when "Other" is ranked. */
+  #ranked-column .item-other-row {
+    display: block;
+  }
+
+  #ranked-column .item-other-input,
+  #ranked-column .item-other-count {
+    display: none;
+  }
+
+  #ranked-column .item-other-print {
+    display: block;
+    margin-top: 6px;
+  }
+  #ranked-column .item-card:last-child { margin-bottom: 0; }
+  .rank-badge {
+    background: var(--navy);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 700;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .ranked-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--gray-400);
+    font-size: 14px;
+  }
+  .ranked-empty-state .arrow { font-size: 28px; margin-bottom: 12px; opacity: 0.4; }
+
+  /* UNRANKED COLUMN */
+  #unranked-column {
+    min-height: 500px;
+  }
+  #unranked-column .item-card {
+    margin-bottom: 10px;
+  }
+
+  /* FOOTER ACTIONS */
+  .actions-bar {
+    max-width: 960px;
+    margin: 0 auto 24px;
+    padding: 0 24px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .btn-primary {
+    background: var(--navy);
+    color: var(--white);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-primary:hover { background: #162B50; box-shadow: var(--shadow-md); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--gray-600);
+    border: 1.5px solid var(--gray-200);
+  }
+  .btn-secondary:hover { border-color: var(--gray-400); color: var(--gray-800); }
+  .btn-gold {
+    background: var(--gold);
+    color: var(--navy);
+  }
+  .btn-gold:hover { background: #B8963E; }
+
+  /* RESULTS MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,20,40,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 36px 40px;
+    max-width: 640px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+  }
+  .modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--gold);
+  }
+  .modal-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--navy);
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: var(--gray-400);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .modal-close:hover { color: var(--gray-800); }
+  .results-list { list-style: none; }
+  .results-list li {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 14px;
+  }
+  .results-list li:last-child { border-bottom: none; }
+  .result-rank {
+    font-weight: 700;
+    color: var(--navy);
+    min-width: 28px;
+    padding-top: 1px;
+  }
+  .results-footer-note {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--gray-400);
+    font-style: italic;
+    text-align: center;
+  }
+  .copy-btn {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  /* PROGRESS INDICATOR */
+  .progress-bar-wrap {
+    max-width: 960px;
+    margin: 0 auto 16px;
+    padding: 0 24px;
+  }
+  .progress-label {
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .progress-bar {
+    height: 4px;
+    background: var(--gray-200);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--gold));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* EMAIL MODAL */
+  .email-modal-body { padding: 8px 0 4px; }
+  .email-field-group { margin-bottom: 18px; }
+  .email-field-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .email-field-group input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 14px;
+    color: var(--gray-800);
+    background: var(--cream);
+    transition: border-color var(--transition);
+    outline: none;
+  }
+  .email-field-group input:focus { border-color: var(--blue); background: var(--white); }
+  .email-field-group input.input-error { border-color: #B91C1C; }
+  .email-preview {
+    background: var(--gray-100);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 12.5px;
+    color: var(--gray-600);
+    line-height: 1.7;
+    max-height: 180px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    margin-bottom: 18px;
+    border: 1px solid var(--gray-200);
+  }
+  .email-preview-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-bottom: 8px;
+  }
+  .email-error-msg {
+    font-size: 12px;
+    color: #B91C1C;
+    margin-top: 5px;
+    display: none;
+  }
+  .modal-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .modal-btn-row .btn { flex: 1; }
+  .btn-email {
+    background: var(--blue);
+    color: var(--white);
+  }
+  .btn-email:hover { background: #255E92; }
+
+  @media print {
+    header { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .actions-bar, .instructions { display: none; }
+    .main { display: block; }
+    #unranked-column { display: none; }
+    #unranked-label { display: none; }
+    #ranked-column { border: none; background: none; padding: 0; }
+    #ranked-column .item-status-label,
+    #ranked-column .item-status-panel,
+    #ranked-column .item-meta {
+      display: block !important;
+    }
+    #ranked-column .item-other-row {
+      display: block !important;
+    }
+    .item-card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+    .item-other-input { display: none !important; }
+    .item-other-count { display: none !important; }
+    .item-other-print { display: block !important; }
+    .item-status-panel { display: block !important; }
+    .item-status-text { background: none !important; border-left: none !important; padding: 0 !important; }
+    .rank-badge { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+    <header>
+        <div class="header-inner">
+          <div class="header-top">
+            <!-- Replace the src below with your logo's filename/path (or a full image URL) -->
+            <img src="https://github.com/CONaples/Naples-Council-Priority-Ranking/blob/main/City%20Seal_All%20White_Transparent.png?raw=true" alt="City of Naples Logo" class="header-logo" onerror="this.style.display='none'">
+            <div class="header-text">
+              <h1>Council Priority Ranking Survey</h1>
+              <p class="subtitle">Additional Items for Prioritization &nbsp;·&nbsp; August 2026</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+<div class="instructions">
+  <h2>How to Use This Tool</h2>
+  <p>Drag items from the <strong>left column</strong> into the <strong>right column</strong> to rank them in order of priority — <strong>#1 being highest priority</strong>. You can reorder items in the ranked list by dragging them up or down. Ranked items show your priority position. When finished, click <strong>"View My Rankings"</strong> to review and copy your results, or <strong>"Send Via Email"</strong> to email your results directly to Monique Barnhart-Tibero. To print and save your results for your records, select <strong>"Print/Save As A PDF".</strong></p></div>
+
+<div class="progress-bar-wrap">
+  <div class="progress-label">
+    <span id="progress-text">0 of 14 items ranked</span>
+    <span id="progress-pct">0%</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+</div>
+
+<div class="main">
+  <div>
+    <div class="column-label" id="unranked-label">Unranked Items — Drag to rank →</div>
+    <div id="unranked-column"></div>
+  </div>
+  <div>
+    <div class="column-label">Your Rankings — Highest Priority at Top</div>
+    <div id="ranked-column">
+      <div class="ranked-empty-state" id="empty-state">
+         <div class="arrow">→</div>
+        <div>Drag items here to rank them</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="actions-bar">
+  <button class="btn btn-primary" onclick="showResults()">View My Rankings</button>
+  <button class="btn btn-email" onclick="openEmailModal()">✉ Send via Email</button>
+  <button class="btn btn-gold" onclick="window.print()">Print / Save as PDF</button>
+  <button class="btn btn-secondary" onclick="resetAll()">Reset All</button>
+</div>
+
+<!-- Results Modal -->
+<div class="modal-overlay" id="results-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Your Priority Rankings</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <ul class="results-list" id="results-list"></ul>
+    <div class="results-footer-note" id="unranked-note"></div>
+    <button class="btn btn-primary copy-btn" onclick="copyResults()">Copy Rankings to Clipboard</button>
+  </div>
+</div>
+
+<!-- Email Modal -->
+<div class="modal-overlay" id="email-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Send Rankings via Email</h2>
+      <button class="modal-close" onclick="closeEmailModal()">✕</button>
+    </div>
+    <div class="email-modal-body">
+      <div class="email-preview-label">Email Preview</div>
+      <div class="email-preview" id="email-preview-text"></div>
+      <div class="modal-btn-row">
+        <button class="btn btn-email" onclick="sendEmail()">Open in Email Client</button>
+        <button class="btn btn-secondary" onclick="closeEmailModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+const RECIPIENT_EMAIL = "mbarnhart@naplesgov.com"; 
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// To set/update an item's status, edit the `status:` text below directly.
+// Leave it as an empty string ("") if there's nothing to report yet.
+// ─────────────────────────────────────────────────────────────────────────
+const ITEMS = [
+  { id: 1,  title: "Review Development Standards within the D-Downtown, Including Parking", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use", status: "A re-evaluation of existing incentives in light of current conditions, and updates to development standards to better reflect changing development patterns." },
+  { id: 2,  title: 'Review Development Standards within the 5th Ave S Special Overlay District, Including Parking, Outdoor Dining, Build-To Line, Etc.', dept: "Planning", category: "Land Use & Planning", cat_class: "land-use", status: "Implications of incentives within the overlay to be discussed. Tentatively scheduled for October Council Workshop." },
+  { id: 3,  title: "5th Ave S Valet and Parking Lot Agreements", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use", status: "Review the contract terms and expiration dates for valet operations and lot rentals. Tentatively scheduled for October Council Workshop." },
+  { id: 4,  title: "Rooftop Dining", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use", status: "Discussion of rooftop dining regulations in the 5th Avenue South Special Overlay District, established by Ordinance 2021-14663 which expired on June 16, 2026, and consider reestablishing the regulations, extending the pilot program, or removing the regulations altogether. Tentatively scheduled for October Council Workshop." },
+  { id: 5,  title: "Miracle Mile Master Plan", dept: "Public Works & City Manager", category: "Land Use & Planning", cat_class: "land-use", status: "Review conceptual design and outline of additional opportunities and obstacles." },
+  { id: 6,  title: "Review Signage Regulations City-Wide", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use", status: "Obtain Council's concerns, feedback, and direction for potential changes and evaluations of any legal restrictions and legal authority to govern." },
+  { id: 7,  title: "Review Lighting Regulations City-Wide", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use", status: "Obtain Council's conerns, feedback, and direction for potential changes and evaluations of any legal restrictions." },
+  { id: 8,  title: "Continued Discussion on Paid Parking Downtown", dept: "City Manager & Finance", category: "Finance", cat_class: "finance", status: "Ongoing discussions and strategic planning regarding the implementation, management, and future direction of a paid parking system in the downtown area. Including sign proliferation. Recent sign changes on Beach Parking to gain enforcement on appealed parking tickets. October 2026 discussion of direction and choose target date for implementation." },
+  { id: 9,  title: "Review Regulations Pertaining to Underground Parking", dept: "City Attorney & City Manager", category: "Land Use & Planning", cat_class: "land-use", status: "At the February 18, 2025 City Council workshop, Council reaffirmed consensus to pause processing underground parking and directed staff to develop City of Naples regulations exceeding Florida Building Code." },
+  { id: 10, title: "Review Outdoor Dining Regulations for Potential Changes", dept: "City Attorney & City Manager", category: "Land Use & Planning", cat_class: "land-use", status: "June 21, 2023: The first reading of the ordinance was approved. On January 8, 2025, the ordinance approval process restarted with the PAB and was placed on the agenda for consideration. On February 20, 2025, the City Council directed the City Attorney to revise the ordinance to include a sunset provision. To be further reviewed and schedule placement for potential ordinance changes." },
+  { id: 11, title: "Subdivisions", dept: "Planning", category: "Land Use & Planning", cat_class: "land-use", status: "Review of Chapter 54, Subdivision Standards, related to subdivision and replat requirements, procedures, and criteria for review." },
+  { id: 12, title: "Collier County One-Cent Infrastructure Surtax Initiative Update", dept: "City Manager", category: "Finance", cat_class: "finance", status: "Not expected to need support until January 2027 for November 2027 election cycle." },
+  { id: 13, title: "Interlocal Agreements — Water Usage/Capacity & Sewer (City & County)", dept: "Public Works", category: "Sustainability", cat_class: "sustainability", status: "Interlocal agreements between the City and County addressing the coordination management of water usage, capacity planning, and sanitary/sewer services. These agreements outline responsibilities, infrastructure sharing, service areas, and procedures to ensure efficient and sustainable utility services across jurisdictions." },
+  { id: 14, title: "Other", dept: "", category: "", cat_class: "other", isOther: true },
+];
+
+let draggedEl = null;
+let dragSource = null; // 'unranked' or 'ranked'
+let itemState = {}; // { [itemId]: { otherText: '' } } — persists typed "Other" text across drag re-renders
+const ORIGINAL_ORDER = ITEMS.map(item => item.id);
+const OTHER_MAX_LENGTH = 600; // roughly 3 short paragraphs
+
+function escapeHtml(str) {
+  return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, '&quot;');
+}
+
+function clearDropIndicators() {
+  document.querySelectorAll('#ranked-column .drop-before, #ranked-column .drop-after, #ranked-column .drag-target').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drag-target'));
+}
+function showDropIndicator(card, y) {
+  clearDropIndicators();
+  if (!draggedEl || card === draggedEl || card.parentNode.id !== 'ranked-column') return;
+  const r = card.getBoundingClientRect();
+  card.classList.add('drag-target', y < r.top + r.height / 2 ? 'drop-before' : 'drop-after');
+}
+
+function makeCard(item, inRanked, rank) {
+  const card = document.createElement('div');
+  card.className = 'item-card';
+  card.draggable = true;
+  card.dataset.id = item.id;
+
+  const handle = document.createElement('div');
+  handle.className = 'item-drag-handle';
+  handle.innerHTML = '⋮⋮';
+
+  const body = document.createElement('div');
+  body.className = 'item-body';
+
+  if (inRanked) {
+    const badge = document.createElement('div');
+    badge.className = 'rank-badge';
+    badge.textContent = rank;
+    card.appendChild(badge);
+  } else {
+    card.appendChild(handle);
+  }
+
+  const state = itemState[item.id] || {};
+  const statusText = (item.status || '').trim();
+  const statusHtml = `
+      <div class="item-status-label">Status:</div>
+      <div class="item-status-panel">
+        <div class="item-status-text">${statusText ? escapeHtml(statusText) : '<em>No status set</em>'}</div>
+      </div>`;
+
+  if (item.isOther) {
+    const otherText = state.otherText || '';
+    body.innerHTML = `
+      <div class="item-number">Item ${item.id}</div>
+      <div class="item-title">Other <span class="item-other-note">(please specify below, max ${OTHER_MAX_LENGTH} characters)</span></div>
+      <div class="item-other-row">
+        <textarea draggable="false" class="item-other-input" rows="4" maxlength="${OTHER_MAX_LENGTH}" placeholder="Describe another priority not listed above...">${escapeHtml(otherText)}</textarea>
+        <div class="item-other-count">${otherText.length} / ${OTHER_MAX_LENGTH}</div>
+        <div class="item-other-print">${otherText ? escapeHtml(otherText) : '<em>Not specified</em>'}</div>
+      </div>
+    `;
+  } else {
+    body.innerHTML = `
+      <div class="item-number">Item ${item.id}</div>
+      <div class="item-title">${item.title}</div>
+      ${statusHtml}
+      <div class="item-meta">
+        <span class="item-dept">${item.dept}</span>
+        <span class="item-category ${item.cat_class}">${item.category}</span>
+      </div>
+    `;
+  }
+  card.appendChild(body);
+
+  // Wire up the "Other" text box: persist value in itemState, auto-grow to fit content, keep drag from hijacking clicks/typing
+  const otherInput = body.querySelector('.item-other-input');
+  const otherCount = body.querySelector('.item-other-count');
+  const otherPrint = body.querySelector('.item-other-print');
+  if (otherInput) {
+    const autoGrow = () => {
+      otherInput.style.height = 'auto';
+      otherInput.style.height = otherInput.scrollHeight + 'px';
+    };
+    const updateCount = () => {
+      if (!otherCount) return;
+      const len = otherInput.value.length;
+      otherCount.textContent = `${len} / ${OTHER_MAX_LENGTH}`;
+      otherCount.classList.toggle('near-limit', len >= OTHER_MAX_LENGTH * 0.85 && len < OTHER_MAX_LENGTH);
+      otherCount.classList.toggle('at-limit', len >= OTHER_MAX_LENGTH);
+    };
+    const updatePrint = () => {
+      if (!otherPrint) return;
+      const val = otherInput.value.trim();
+      otherPrint.textContent = val || 'Not specified';
+      otherPrint.style.fontStyle = val ? 'normal' : 'italic';
+      otherPrint.style.color = val ? '' : 'var(--gray-400)';
+    };
+    otherInput.addEventListener('input', e => {
+      itemState[item.id] = itemState[item.id] || {};
+      itemState[item.id].otherText = e.target.value;
+      autoGrow();
+      updateCount();
+      updatePrint();
+    });
+    otherInput.addEventListener('mousedown', e => e.stopPropagation());
+    // Initialize height/count to fit any existing content on render
+    requestAnimationFrame(autoGrow);
+    updateCount();
+  }
+
+  // Drag events
+  card.addEventListener('dragstart', e => {
+    if (e.target.tagName === 'INPUT') { e.preventDefault(); return; }
+    draggedEl = card;
+    dragSource = inRanked ? 'ranked' : 'unranked';
+    setTimeout(() => card.classList.add('dragging'), 0);
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  card.addEventListener('dragend', () => {
+    card.classList.remove('dragging');
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    document.getElementById('ranked-column').classList.remove('drag-over-zone');
+    clearDropIndicators();
+    draggedEl = null;
+    updateRankBadges();
+    updateProgress();
+    toggleEmptyState();
+  });
+  card.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (draggedEl && draggedEl !== card) {
+      if (card.parentNode.id === 'ranked-column') showDropIndicator(card, e.clientY);
+      else card.classList.add('drag-over');
+    }
+  });
+  card.addEventListener('dragleave', () => {
+    card.classList.remove('drag-over', 'drop-before', 'drop-after', 'drag-target');
+  });
+  card.addEventListener('drop', e => {
+    e.preventDefault();
+    clearDropIndicators();
+    card.classList.remove('drag-over');
+    if (!draggedEl || draggedEl === card) return;
+    const targetParent = card.parentNode;
+    const rect = card.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+    if (e.clientY < midpoint) targetParent.insertBefore(draggedEl, card);
+    else targetParent.insertBefore(draggedEl, card.nextSibling);
+    const itemId = parseInt(draggedEl.dataset.id);
+    const item = ITEMS.find(i => i.id === itemId);
+    const nowInRanked = targetParent.id === 'ranked-column';
+    const newCard = makeCard(item, nowInRanked, 0);
+    draggedEl.replaceWith(newCard);
+    draggedEl = newCard;
+    updateRankBadges();
+  });
+
+  return card;
+}
+
+function buildUnranked() {
+  const col = document.getElementById('unranked-column');
+  col.innerHTML = '';
+  ITEMS.forEach(item => col.appendChild(makeCard(item, false, 0)));
+}
+
+function toggleEmptyState() {
+  const ranked = document.getElementById('ranked-column');
+  const empty = document.getElementById('empty-state');
+  const hasCards = ranked.querySelectorAll('.item-card').length > 0;
+  if (empty) empty.style.display = hasCards ? 'none' : 'block';
+}
+
+function updateRankBadges() {
+  const ranked = document.getElementById('ranked-column');
+  ranked.querySelectorAll('.item-card').forEach((card, i) => {
+    const badge = card.querySelector('.rank-badge');
+    if (badge) badge.textContent = i + 1;
+  });
+}
+
+function updateProgress() {
+  const ranked = document.getElementById('ranked-column');
+  const count = ranked.querySelectorAll('.item-card').length;
+  const total = ITEMS.length;
+  const pct = Math.round((count / total) * 100);
+  document.getElementById('progress-text').textContent = `${count} of ${total} items ranked`;
+  document.getElementById('progress-pct').textContent = `${pct}%`;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+// While dragging, allow mouse-wheel / trackpad scrolling.
+document.addEventListener('wheel', e => {
+  if (!draggedEl) return;
+  const target = e.target instanceof Element
+    ? e.target.closest('#ranked-column, #unranked-column')
+    : null;
+
+  if (target && target.scrollHeight > target.clientHeight) {
+    target.scrollTop += e.deltaY;
+  } else {
+    window.scrollBy(0, e.deltaY);
+  }
+  e.preventDefault();
+}, { passive: false });
+
+// Drop on ranked column (empty zone)
+const rankedCol = document.getElementById('ranked-column');
+rankedCol.addEventListener('dragover', e => {
+  e.preventDefault();
+  rankedCol.classList.add('drag-over-zone');
+});
+rankedCol.addEventListener('dragleave', e => {
+  if (!rankedCol.contains(e.relatedTarget)) {
+    rankedCol.classList.remove('drag-over-zone');
+  }
+});
+rankedCol.addEventListener('drop', e => {
+  e.preventDefault();
+  rankedCol.classList.remove('drag-over-zone');
+  if (!draggedEl) return;
+
+  // Only drop if dropped on the column itself (not a card)
+  if (e.target === rankedCol || e.target.id === 'empty-state' || e.target.closest('#empty-state')) {
+    const itemId = parseInt(draggedEl.dataset.id);
+    const item = ITEMS.find(i => i.id === itemId);
+    const newCard = makeCard(item, true, 0);
+    rankedCol.appendChild(newCard);
+    draggedEl.remove();
+    draggedEl = newCard;
+  }
+});
+
+// Drop on unranked column — restore a ranked card to its original position.
+const unrankedCol = document.getElementById('unranked-column');
+unrankedCol.addEventListener('dragover', e => e.preventDefault());
+unrankedCol.addEventListener('drop', e => {
+  e.preventDefault();
+  if (!draggedEl || dragSource !== 'ranked') return;
+
+  const itemId = parseInt(draggedEl.dataset.id);
+  const item = ITEMS.find(i => i.id === itemId);
+  const originalIndex = ORIGINAL_ORDER.indexOf(itemId);
+  const unrankedCards = [...unrankedCol.querySelectorAll('.item-card')];
+
+  const insertBefore = unrankedCards.find(card => {
+    const otherId = parseInt(card.dataset.id);
+    return ORIGINAL_ORDER.indexOf(otherId) > originalIndex;
+  });
+
+  const newCard = makeCard(item, false, 0);
+  if (insertBefore) {
+    unrankedCol.insertBefore(newCard, insertBefore);
+  } else {
+    unrankedCol.appendChild(newCard);
+  }
+
+  draggedEl.remove();
+  draggedEl = newCard;
+  updateRankBadges();
+  updateProgress();
+  toggleEmptyState();
+});
+
+function showResults() {
+  const ranked = document.getElementById('ranked-column');
+  const cards = ranked.querySelectorAll('.item-card');
+  const list = document.getElementById('results-list');
+  list.innerHTML = '';
+
+  if (cards.length === 0) {
+    list.innerHTML = '<li style="color:#999;font-style:italic;">No items have been ranked yet. Drag items from the left column to rank them.</li>';
+  } else {
+    cards.forEach((card, i) => {
+      const itemId = parseInt(card.dataset.id);
+      const item = ITEMS.find(it => it.id === itemId);
+      const state = itemState[item.id] || {};
+      const displayTitle = item.isOther
+        ? (state.otherText && state.otherText.trim() ? `Other: ${state.otherText.trim()}` : 'Other (not specified)')
+        : item.title;
+      const statusHtml = item.status && item.status.trim()
+        ? `<div class="result-status">Status: ${escapeHtml(item.status.trim())}</div>`
+        : '';
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="result-rank">#${i+1}</span><span><div>${escapeHtml(displayTitle)}</div>${statusHtml}</span>`;
+      list.appendChild(li);
+    });
+  }
+
+  const unrankedCount = ITEMS.length - cards.length;
+  const note = document.getElementById('unranked-note');
+  note.textContent = unrankedCount > 0 ? `${unrankedCount} item(s) not yet ranked.` : `All ${ITEMS.length} items have been ranked.`;
+
+  document.getElementById('results-modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('results-modal').classList.remove('active');
+}
+
+function copyResults() {
+  const ranked = document.getElementById('ranked-column');
+  const cards = ranked.querySelectorAll('.item-card');
+  let text = "City of Naples — Council Priority Rankings\n";
+  text += "=========================================\n\n";
+  cards.forEach((card, i) => {
+    const itemId = parseInt(card.dataset.id);
+    const item = ITEMS.find(it => it.id === itemId);
+    const state = itemState[item.id] || {};
+    const displayTitle = item.isOther
+      ? (state.otherText && state.otherText.trim() ? `Other: ${state.otherText.trim()}` : 'Other (not specified)')
+      : item.title;
+    text += `${i+1}. ${displayTitle}\n`;
+    if (!item.isOther) text += `   (${item.dept} — ${item.category})\n`;
+    if (item.status && item.status.trim()) text += `   Status: ${item.status.trim()}\n`;
+    text += `\n`;
+  });
+  const unrankedCount = ITEMS.length - cards.length;
+  if (unrankedCount > 0) text += `\n[${unrankedCount} item(s) not ranked]`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+
+function buildRankingText() {
+  const ranked = document.getElementById('ranked-column');
+  const cards = ranked.querySelectorAll('.item-card');
+  let text = '';
+
+  cards.forEach((card, i) => {
+    const itemId = parseInt(card.dataset.id);
+    const item = ITEMS.find(it => it.id === itemId);
+    const state = itemState[item.id] || {};
+    const displayTitle = item.isOther
+      ? (state.otherText && state.otherText.trim() ? `Other: ${state.otherText.trim()}` : 'Other')
+      : item.title;
+    text += `${i + 1}. ${displayTitle}\n`;
+  });
+
+  return text.trim() || '(No items have been ranked yet.)';
+}
+
+function openEmailModal() {
+  document.getElementById('email-preview-text').textContent = buildRankingText();
+  document.getElementById('email-modal').classList.add('active');
+}
+
+function closeEmailModal() {
+  document.getElementById('email-modal').classList.remove('active');
+}
+
+function sendEmail() {
+  const subject = encodeURIComponent('Council Priority Rankings');
+  const body = encodeURIComponent(buildRankingText());
+  window.location.href = `mailto:${RECIPIENT_EMAIL}?subject=${subject}&body=${body}`;
+}
+
+function resetAll() {
+  if (!confirm('Reset all rankings and start over?')) return;
+  itemState = {};
+  document.getElementById('ranked-column').innerHTML = `
+    <div class="ranked-empty-state" id="empty-state">
+      <div class="arrow">←</div>
+      <div>Drag items here to rank them</div>
+    </div>`;
+  buildUnranked();
+  updateProgress();
+}
+
+// Init
+buildUnranked();
+updateProgress();
+toggleEmptyState();
+</script>
+</body>
+</html>
