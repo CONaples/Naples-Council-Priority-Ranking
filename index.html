@@ -104,8 +104,8 @@
   /* MAIN LAYOUT */
   .main {
     max-width: 1400px;
-    margin: 0 auto 60px;
-    padding: 0 24px;
+    margin: auto;
+    padding: 0 24px 50px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 24px;
@@ -161,10 +161,10 @@
   .item-body { flex: 1; }
   .item-number {
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: var(--gray-400);
+    color: var(--navy);
     margin-bottom: 3px;
   }
   .item-title {
@@ -288,9 +288,10 @@
     background: var(--gray-100);
     border: 2px dashed var(--gray-200);
     border-radius: var(--radius);
-    min-height: 2200px;
-    padding: 16px;
+    min-height: 220px;
+    padding: 12px;
     transition: background var(--transition), border-color var(--transition);
+    width: 500px;
   }
   #ranked-column.drag-over-zone {
     background: var(--gold-light);
