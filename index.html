@@ -7,9 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --navy: #1F3864;
+    --navy: #092238;
     --blue: #2E75B6;
-    --gold: #C9A84C;
+    --gold: #d69229;
     --gold-light: #F5E6C0;
     --cream: #FAFAF7;
     --white: #FFFFFF;
@@ -288,8 +288,8 @@
     background: var(--gray-100);
     border: 2px dashed var(--gray-200);
     border-radius: var(--radius);
-    min-height: 2200px;
-    padding: 16px;
+    min-height: 220px;
+    padding: 12px;
     transition: background var(--transition), border-color var(--transition);
   }
   #ranked-column.drag-over-zone {
@@ -298,6 +298,35 @@
   }
   #ranked-column .item-card {
     margin-bottom: 10px;
+  }
+  #ranked-column .item-card.drop-before, #ranked-column .item-card.drop-after { position: relative; }
+  #ranked-column .item-card.drop-before::before, #ranked-column .item-card.drop-after::after { content: ''; position: absolute; left: -10px; right: -10px; height: 5px; background: var(--gold); border-radius: 4px; box-shadow: 0 0 0 2px rgba(201,168,76,0.2); z-index: 10; pointer-events: none; }
+  #ranked-column .item-card.drop-before::before { top: -8px; }
+  #ranked-column .item-card.drop-after::after { bottom: -8px; }
+  #ranked-column .item-card.drag-target { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.22); }
+
+
+  /* Ranked cards show only rank + item name on screen.
+     Full original details remain available when printing/PDF. */
+  #ranked-column .item-status-label,
+  #ranked-column .item-status-panel,
+  #ranked-column .item-meta {
+    display: none;
+  }
+
+  /* Keep the user's entered text visible when "Other" is ranked. */
+  #ranked-column .item-other-row {
+    display: block;
+  }
+
+  #ranked-column .item-other-input,
+  #ranked-column .item-other-count {
+    display: none;
+  }
+
+  #ranked-column .item-other-print {
+    display: block;
+    margin-top: 6px;
   }
   #ranked-column .item-card:last-child { margin-bottom: 0; }
   .rank-badge {
@@ -325,9 +354,28 @@
   /* UNRANKED COLUMN */
   #unranked-column {
     min-height: 500px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-items: start;
   }
   #unranked-column .item-card {
-    margin-bottom: 10px;
+    margin-bottom: 0;
+    padding: 11px 12px;
+  }
+
+  /* Keep Status visible while making unranked cards more compact. */
+  #unranked-column .item-status-label {
+    margin-top: 7px;
+  }
+  #unranked-column .item-status-panel {
+    margin-top: 3px;
+    margin-bottom: 5px;
+  }
+  #unranked-column .item-status-text {
+    font-size: 11.5px;
+    line-height: 1.35;
+    padding: 5px 8px;
   }
 
   /* FOOTER ACTIONS */
@@ -366,7 +414,7 @@
   .btn-secondary:hover { border-color: var(--gray-400); color: var(--gray-800); }
   .btn-gold {
     background: var(--gold);
-    color: var(--navy);
+    color: white;
   }
   .btn-gold:hover { background: #B8963E; }
 
@@ -537,6 +585,12 @@
   }
   .btn-email:hover { background: #255E92; }
 
+  @media (max-width: 760px) {
+    #unranked-column {
+      grid-template-columns: 1fr;
+    }
+  }
+
   @media print {
     header { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
     .actions-bar, .instructions { display: none; }
@@ -544,6 +598,14 @@
     #unranked-column { display: none; }
     #unranked-label { display: none; }
     #ranked-column { border: none; background: none; padding: 0; }
+    #ranked-column .item-status-label,
+    #ranked-column .item-status-panel,
+    #ranked-column .item-meta {
+      display: block !important;
+    }
+    #ranked-column .item-other-row {
+      display: block !important;
+    }
     .item-card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
     .item-other-input { display: none !important; }
     .item-other-count { display: none !important; }
@@ -625,11 +687,6 @@
       <button class="modal-close" onclick="closeEmailModal()">✕</button>
     </div>
     <div class="email-modal-body">
-      <div class="email-field-group">
-        <label for="sender-name">Your Name</label>
-        <input type="text" id="sender-name" placeholder="Council Member Name" />
-        <div class="email-error-msg" id="name-error">Please enter your name before sending.</div>
-      </div>
       <div class="email-preview-label">Email Preview</div>
       <div class="email-preview" id="email-preview-text"></div>
       <div class="modal-btn-row">
@@ -669,6 +726,7 @@ const ITEMS = [
 let draggedEl = null;
 let dragSource = null; // 'unranked' or 'ranked'
 let itemState = {}; // { [itemId]: { otherText: '' } } — persists typed "Other" text across drag re-renders
+const ORIGINAL_ORDER = ITEMS.map(item => item.id);
 const OTHER_MAX_LENGTH = 600; // roughly 3 short paragraphs
 
 function escapeHtml(str) {
@@ -676,6 +734,16 @@ function escapeHtml(str) {
 }
 function escapeAttr(str) {
   return escapeHtml(str).replace(/"/g, '&quot;');
+}
+
+function clearDropIndicators() {
+  document.querySelectorAll('#ranked-column .drop-before, #ranked-column .drop-after, #ranked-column .drag-target').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drag-target'));
+}
+function showDropIndicator(card, y) {
+  clearDropIndicators();
+  if (!draggedEl || card === draggedEl || card.parentNode.id !== 'ranked-column') return;
+  const r = card.getBoundingClientRect();
+  card.classList.add('drag-target', y < r.top + r.height / 2 ? 'drop-before' : 'drop-after');
 }
 
 function makeCard(item, inRanked, rank) {
@@ -780,6 +848,7 @@ function makeCard(item, inRanked, rank) {
     card.classList.remove('dragging');
     document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
     document.getElementById('ranked-column').classList.remove('drag-over-zone');
+    clearDropIndicators();
     draggedEl = null;
     updateRankBadges();
     updateProgress();
@@ -788,31 +857,30 @@ function makeCard(item, inRanked, rank) {
   card.addEventListener('dragover', e => {
     e.preventDefault();
     if (draggedEl && draggedEl !== card) {
-      card.classList.add('drag-over');
+      if (card.parentNode.id === 'ranked-column') showDropIndicator(card, e.clientY);
+      else card.classList.add('drag-over');
     }
   });
-  card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+  card.addEventListener('dragleave', () => {
+    card.classList.remove('drag-over', 'drop-before', 'drop-after', 'drag-target');
+  });
   card.addEventListener('drop', e => {
     e.preventDefault();
+    clearDropIndicators();
     card.classList.remove('drag-over');
     if (!draggedEl || draggedEl === card) return;
-
     const targetParent = card.parentNode;
     const rect = card.getBoundingClientRect();
     const midpoint = rect.top + rect.height / 2;
-    if (e.clientY < midpoint) {
-      targetParent.insertBefore(draggedEl, card);
-    } else {
-      targetParent.insertBefore(draggedEl, card.nextSibling);
-    }
-
-    // Rebuild card to match new column type
+    if (e.clientY < midpoint) targetParent.insertBefore(draggedEl, card);
+    else targetParent.insertBefore(draggedEl, card.nextSibling);
     const itemId = parseInt(draggedEl.dataset.id);
     const item = ITEMS.find(i => i.id === itemId);
     const nowInRanked = targetParent.id === 'ranked-column';
     const newCard = makeCard(item, nowInRanked, 0);
     draggedEl.replaceWith(newCard);
     draggedEl = newCard;
+    updateRankBadges();
   });
 
   return card;
@@ -849,6 +917,21 @@ function updateProgress() {
   document.getElementById('progress-fill').style.width = pct + '%';
 }
 
+// While dragging, allow mouse-wheel / trackpad scrolling.
+document.addEventListener('wheel', e => {
+  if (!draggedEl) return;
+  const target = e.target instanceof Element
+    ? e.target.closest('#ranked-column, #unranked-column')
+    : null;
+
+  if (target && target.scrollHeight > target.clientHeight) {
+    target.scrollTop += e.deltaY;
+  } else {
+    window.scrollBy(0, e.deltaY);
+  }
+  e.preventDefault();
+}, { passive: false });
+
 // Drop on ranked column (empty zone)
 const rankedCol = document.getElementById('ranked-column');
 rankedCol.addEventListener('dragover', e => {
@@ -876,22 +959,35 @@ rankedCol.addEventListener('drop', e => {
   }
 });
 
-// Drop on unranked column
+// Drop on unranked column — restore a ranked card to its original position.
 const unrankedCol = document.getElementById('unranked-column');
 unrankedCol.addEventListener('dragover', e => e.preventDefault());
 unrankedCol.addEventListener('drop', e => {
   e.preventDefault();
-  if (!draggedEl) return;
+  if (!draggedEl || dragSource !== 'ranked') return;
+
   const itemId = parseInt(draggedEl.dataset.id);
   const item = ITEMS.find(i => i.id === itemId);
+  const originalIndex = ORIGINAL_ORDER.indexOf(itemId);
+  const unrankedCards = [...unrankedCol.querySelectorAll('.item-card')];
 
-  // Only move back if came from ranked
-  if (dragSource === 'ranked') {
-    const newCard = makeCard(item, false, 0);
+  const insertBefore = unrankedCards.find(card => {
+    const otherId = parseInt(card.dataset.id);
+    return ORIGINAL_ORDER.indexOf(otherId) > originalIndex;
+  });
+
+  const newCard = makeCard(item, false, 0);
+  if (insertBefore) {
+    unrankedCol.insertBefore(newCard, insertBefore);
+  } else {
     unrankedCol.appendChild(newCard);
-    draggedEl.remove();
-    draggedEl = newCard;
   }
+
+  draggedEl.remove();
+  draggedEl = newCard;
+  updateRankBadges();
+  updateProgress();
+  toggleEmptyState();
 });
 
 function showResults() {
@@ -958,51 +1054,26 @@ function copyResults() {
   });
 }
 
-function buildRankingText(senderName) {
+function buildRankingText() {
   const ranked = document.getElementById('ranked-column');
   const cards = ranked.querySelectorAll('.item-card');
-  const name = senderName ? senderName.trim() : '';
-  let text = "City of Naples — Council Priority Rankings\n";
-  text += "==========================================\n";
-  if (name) text += `Submitted by: ${name}\n`;
-  text += `Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n\n`;
+  let text = '';
 
-  if (cards.length === 0) {
-    text += "(No items have been ranked yet.)\n";
-  } else {
-    text += "RANKED PRIORITIES (Highest to Lowest):\n\n";
-    cards.forEach((card, i) => {
-      const itemId = parseInt(card.dataset.id);
-      const item = ITEMS.find(it => it.id === itemId);
-      const state = itemState[item.id] || {};
-      const displayTitle = item.isOther
-        ? (state.otherText && state.otherText.trim() ? `Other: ${state.otherText.trim()}` : 'Other (not specified)')
-        : item.title;
-      text += `  ${i + 1}. ${displayTitle}\n`;
-      if (!item.isOther) text += `     (${item.dept} — ${item.category})\n`;
-      if (item.status && item.status.trim()) text += `     Status: ${item.status.trim()}\n`;
-      text += `\n`;
-    });
-  }
+  cards.forEach((card, i) => {
+    const itemId = parseInt(card.dataset.id);
+    const item = ITEMS.find(it => it.id === itemId);
+    const state = itemState[item.id] || {};
+    const displayTitle = item.isOther
+      ? (state.otherText && state.otherText.trim() ? `Other: ${state.otherText.trim()}` : 'Other')
+      : item.title;
+    text += `${i + 1}. ${displayTitle}\n`;
+  });
 
-  const unrankedCount = ITEMS.length - cards.length;
-  if (unrankedCount > 0) {
-    text += `[${unrankedCount} item(s) not ranked]\n`;
-  } else {
-    text += `All ${ITEMS.length} items have been ranked.\n`;
-  }
-  return text;
+  return text.trim() || '(No items have been ranked yet.)';
 }
 
 function openEmailModal() {
-  const preview = document.getElementById('email-preview-text');
-  const nameInput = document.getElementById('sender-name');
-  preview.textContent = buildRankingText(nameInput.value);
-  nameInput.addEventListener('input', () => {
-    preview.textContent = buildRankingText(nameInput.value);
-    document.getElementById('name-error').style.display = 'none';
-    nameInput.classList.remove('input-error');
-  });
+  document.getElementById('email-preview-text').textContent = buildRankingText();
   document.getElementById('email-modal').classList.add('active');
 }
 
@@ -1011,16 +1082,8 @@ function closeEmailModal() {
 }
 
 function sendEmail() {
-  const nameInput = document.getElementById('sender-name');
-  const name = nameInput.value.trim();
-  if (!name) {
-    nameInput.classList.add('input-error');
-    document.getElementById('name-error').style.display = 'block';
-    nameInput.focus();
-    return;
-  }
-  const subject = encodeURIComponent(`Council Priority Rankings — ${name}`);
-  const body = encodeURIComponent(buildRankingText(name));
+  const subject = encodeURIComponent('Council Priority Rankings');
+  const body = encodeURIComponent(buildRankingText());
   window.location.href = `mailto:${RECIPIENT_EMAIL}?subject=${subject}&body=${body}`;
 }
 
