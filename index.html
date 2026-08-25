@@ -104,8 +104,8 @@
   /* MAIN LAYOUT */
   .main {
     max-width: 1400px;
-    margin: auto;
-    padding: 0 24px 50px;
+    margin: 0 auto 60px;
+    padding: 0 24px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 24px;
@@ -161,10 +161,10 @@
   .item-body { flex: 1; }
   .item-number {
     font-size: 10px;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: var(--navy);
+    color: var(--gray-400);
     margin-bottom: 3px;
   }
   .item-title {
@@ -288,10 +288,9 @@
     background: var(--gray-100);
     border: 2px dashed var(--gray-200);
     border-radius: var(--radius);
-    min-height: 220px;
-    padding: 12px;
+    min-height: 2200px;
+    padding: 16px;
     transition: background var(--transition), border-color var(--transition);
-    width: 500px;
   }
   #ranked-column.drag-over-zone {
     background: var(--gold-light);
@@ -355,11 +354,6 @@
   /* UNRANKED COLUMN */
   #unranked-column {
     min-height: 500px;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    align-items: stretch;
-    width: 900px;
   }
   #unranked-column .item-card {
     margin-bottom: 10px;
