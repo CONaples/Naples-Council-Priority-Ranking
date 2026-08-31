@@ -137,6 +137,9 @@
     box-shadow: var(--shadow-sm);
   }
   .item-card:active { cursor: grabbing; }
+  .item-card { touch-action: pan-y; }
+  body.touch-dragging { user-select: none; -webkit-user-select: none; }
+  body.touch-dragging .item-card { touch-action: none; }
   .item-card.dragging {
     opacity: 0.35;
     transform: scale(0.98);
@@ -811,14 +814,18 @@ function makeCard(item, inRanked, rank) {
     updateCount();
   }
 
-  // Drag events
+  // Desktop drag-and-drop (HTML5)
   card.addEventListener('dragstart', e => {
-    if (e.target.tagName === 'INPUT') { e.preventDefault(); return; }
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      e.preventDefault();
+      return;
+    }
     draggedEl = card;
     dragSource = inRanked ? 'ranked' : 'unranked';
     setTimeout(() => card.classList.add('dragging'), 0);
     e.dataTransfer.effectAllowed = 'move';
   });
+
   card.addEventListener('dragend', () => {
     card.classList.remove('dragging');
     document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
@@ -829,6 +836,7 @@ function makeCard(item, inRanked, rank) {
     updateProgress();
     toggleEmptyState();
   });
+
   card.addEventListener('dragover', e => {
     e.preventDefault();
     if (draggedEl && draggedEl !== card) {
@@ -836,19 +844,24 @@ function makeCard(item, inRanked, rank) {
       else card.classList.add('drag-over');
     }
   });
+
   card.addEventListener('dragleave', () => {
     card.classList.remove('drag-over', 'drop-before', 'drop-after', 'drag-target');
   });
+
   card.addEventListener('drop', e => {
     e.preventDefault();
     clearDropIndicators();
     card.classList.remove('drag-over');
     if (!draggedEl || draggedEl === card) return;
+
     const targetParent = card.parentNode;
     const rect = card.getBoundingClientRect();
     const midpoint = rect.top + rect.height / 2;
+
     if (e.clientY < midpoint) targetParent.insertBefore(draggedEl, card);
     else targetParent.insertBefore(draggedEl, card.nextSibling);
+
     const itemId = parseInt(draggedEl.dataset.id);
     const item = ITEMS.find(i => i.id === itemId);
     const nowInRanked = targetParent.id === 'ranked-column';
@@ -857,6 +870,134 @@ function makeCard(item, inRanked, rank) {
     draggedEl = newCard;
     updateRankBadges();
   });
+
+  // iPad/iPhone touch support.
+  // Safari does not reliably support HTML5 draggable on touch screens,
+  // so touch dragging is handled separately.
+  let touchDrag = null;
+
+  function touchCleanup() {
+    if (touchDrag) touchDrag.card.classList.remove('dragging');
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    document.getElementById('ranked-column').classList.remove('drag-over-zone');
+    clearDropIndicators();
+    touchDrag = null;
+    draggedEl = null;
+    document.body.classList.remove('touch-dragging');
+  }
+
+  function touchMove(e) {
+    if (!touchDrag) return;
+
+    const t = e.touches[0];
+    const dx = t.clientX - touchDrag.startX;
+    const dy = t.clientY - touchDrag.startY;
+
+    // Let ordinary swipes continue to scroll the page.
+    if (!touchDrag.started) {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      touchDrag.started = true;
+      draggedEl = touchDrag.card;
+      dragSource = touchDrag.inRanked ? 'ranked' : 'unranked';
+      touchDrag.card.classList.add('dragging');
+      document.body.classList.add('touch-dragging');
+    }
+
+    e.preventDefault();
+
+    const under = document.elementFromPoint(t.clientX, t.clientY);
+    const targetCard = under ? under.closest('.item-card') : null;
+    const ranked = document.getElementById('ranked-column');
+    const unranked = document.getElementById('unranked-column');
+
+    if (targetCard && targetCard !== touchDrag.card) {
+      if (targetCard.parentNode.id === 'ranked-column') {
+        showDropIndicator(targetCard, t.clientY);
+      } else {
+        clearDropIndicators();
+        targetCard.classList.add('drag-over');
+      }
+    } else {
+      clearDropIndicators();
+    }
+
+    const inRanked = under && (under === ranked || ranked.contains(under));
+    ranked.classList.toggle('drag-over-zone', !!inRanked && !targetCard);
+
+    // Auto-scroll near the screen edges.
+    const edge = 70;
+    if (t.clientY < edge) window.scrollBy(0, -12);
+    else if (t.clientY > window.innerHeight - edge) window.scrollBy(0, 12);
+  }
+
+  function touchEnd(e) {
+    if (!touchDrag || !touchDrag.started) {
+      touchCleanup();
+      return;
+    }
+
+    const t = e.changedTouches[0];
+    const dragged = touchDrag.card;
+    const under = document.elementFromPoint(t.clientX, t.clientY);
+    const targetCard = under ? under.closest('.item-card') : null;
+    const ranked = document.getElementById('ranked-column');
+    const unranked = document.getElementById('unranked-column');
+
+    if (targetCard && targetCard !== dragged) {
+      const parent = targetCard.parentNode;
+      const rect = targetCard.getBoundingClientRect();
+      const before = t.clientY < rect.top + rect.height / 2;
+
+      if (parent === ranked) {
+        parent.insertBefore(dragged, before ? targetCard : targetCard.nextSibling);
+        const item = ITEMS.find(i => i.id === parseInt(dragged.dataset.id));
+        const newCard = makeCard(item, true, 0);
+        dragged.replaceWith(newCard);
+      } else if (parent === unranked && touchDrag.inRanked) {
+        const itemId = parseInt(dragged.dataset.id);
+        const item = ITEMS.find(i => i.id === itemId);
+        const originalIndex = ORIGINAL_ORDER.indexOf(itemId);
+        const cards = [...unranked.querySelectorAll('.item-card')];
+        const beforeCard = cards.find(c =>
+          ORIGINAL_ORDER.indexOf(parseInt(c.dataset.id)) > originalIndex
+        );
+        const newCard = makeCard(item, false, 0);
+        if (beforeCard) unranked.insertBefore(newCard, beforeCard);
+        else unranked.appendChild(newCard);
+        dragged.remove();
+      }
+    } else {
+      // Dropping anywhere in the ranked area appends the item.
+      const inRanked = under && (under === ranked || ranked.contains(under));
+      if (inRanked) {
+        const item = ITEMS.find(i => i.id === parseInt(dragged.dataset.id));
+        const newCard = makeCard(item, true, 0);
+        ranked.appendChild(newCard);
+        dragged.remove();
+      }
+    }
+
+    updateRankBadges();
+    updateProgress();
+    toggleEmptyState();
+    touchCleanup();
+  }
+
+  card.addEventListener('touchstart', e => {
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+    const t = e.touches[0];
+    touchDrag = {
+      card,
+      inRanked,
+      startX: t.clientX,
+      startY: t.clientY,
+      started: false
+    };
+  }, { passive: true });
+
+  card.addEventListener('touchmove', touchMove, { passive: false });
+  card.addEventListener('touchend', touchEnd, { passive: false });
+  card.addEventListener('touchcancel', touchCleanup, { passive: true });
 
   return card;
 }
